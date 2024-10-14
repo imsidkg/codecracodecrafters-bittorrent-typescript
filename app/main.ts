@@ -19,7 +19,7 @@ function decodeBencode(bencodedValue: string): string|number {
     if (endIndex === -1) {
       throw new Error('Invalid encoded value')
     }
-    1
+    
     return parseInt(bencodedValue.substring(1, endIndex))
      
     } else {
