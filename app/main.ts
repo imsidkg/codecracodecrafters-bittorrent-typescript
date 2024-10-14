@@ -15,12 +15,12 @@ function decodeBencode(bencodedValue: string): string|number {
         return bencodedValue.substring(firstColonIndex + 1);
     }
     else if (bencodedValue[0] === 'i') {
-        const match = bencodedValue.match(/\d+/g);
-        if (match) {
-            return parseInt(match[0], 10); // Convert the first match to a number
-        } else {
-            throw new Error("Invalid encoded value"); // Handle the case where no digits are found
-        }
+        const endIndex = bencodedValue.indexOf('e')
+    if (endIndex === -1) {
+      throw new Error('Invalid encoded value')
+    }
+    1
+    return parseInt(bencodedValue.substring(1, endIndex))
      
     } else {
         throw new Error("Only strings are supported at the moment");
