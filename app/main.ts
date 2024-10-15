@@ -64,6 +64,6 @@ if (args[2] === "decode") {
         }
 
     } catch (error: any) {
-        console.error(error.message);
+        console.error(error.message)
     }
 }
