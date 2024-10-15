@@ -1,72 +1,69 @@
-function decodeBencode(bencodedValue: string): string | number | Array<string | number> {
-    /* This function decodes bencoded strings, integers, and lists, including nested lists */
+type BEncodeValue = string | number | Array<BEncodeValue>;
 
-    // Check if it's a bencoded list starting with 'l'
-    if (bencodedValue[0] === 'l') {
-        const list: Array<string | number> = [];
-        let currentIndex = 1; // Start after 'l'
+function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
+  const isString = (val: string): boolean => {
+    return !isNaN(parseInt(val.split(":")[0]));
+  };
 
-        // Decode elements inside the list
-        while (bencodedValue[currentIndex] !== 'e') {
-            const element = decodeBencode(bencodedValue.slice(currentIndex));
+  const isInt = (val: string): boolean => {
+    return val[0] === "i";
+  };
 
-            // Add the decoded element to the list
-            if (Array.isArray(element)) {
-                list.push(element); // Nested list
-            } else {
-                list.push(element); // String or number
-            }
+  const isList = (val: string): boolean => {
+    return val[0] === "l";
+  };
 
-            // Update currentIndex based on the type of the decoded element
-            if (typeof element === 'string') {
-                currentIndex += element.length + element.length.toString().length + 1; // string length + prefix + colon
-            } else if (typeof element === 'number') {
-                currentIndex += element.toString().length + 2; // length of number + 'i' and 'e'
-            } else if (Array.isArray(element)) {
-                currentIndex += bencodedValue.slice(currentIndex).indexOf('e') + 1; // Adjust for nested lists
-            }
-        }
-
-        return list;
+  // Check if the bencodedValue is a string
+  if (isString(bencodedValue)) {
+    const strlen = parseInt(bencodedValue.split(":")[0]);
+    const firstColonIndex = bencodedValue.indexOf(":");
+    if (firstColonIndex === -1) {
+      throw new Error("Invalid encoded value");
     }
+    return [
+      bencodedValue.substring(firstColonIndex + 1, firstColonIndex + 1 + strlen),
+      firstColonIndex + 1 + strlen,
+    ];
+  }
 
-    // Check if it's a bencoded string (starts with a number)
-    if (!isNaN(parseInt(bencodedValue[0]))) {
-        const firstColonIndex = bencodedValue.indexOf(":");
-        if (firstColonIndex === -1) {
-            throw new Error("Invalid encoded value");
-        }
-        return bencodedValue.slice(firstColonIndex + 1, firstColonIndex + 1 + parseInt(bencodedValue.slice(0, firstColonIndex)));
+  // Check if the bencodedValue is an integer
+  else if (isInt(bencodedValue)) {
+    const endOfInt = bencodedValue.indexOf("e");
+    if (endOfInt === -1) {
+      throw new Error("Invalid encoded value");
     }
+    return [parseInt(bencodedValue.substring(1, endOfInt)), endOfInt + 1];
+  }
 
-    // Check if it's a bencoded integer (starts with 'i')
-    if (bencodedValue[0] === 'i') {
-        const endIndex = bencodedValue.indexOf('e');
-        if (endIndex === -1) {
-            throw new Error('Invalid encoded value');
-        }
-        return parseInt(bencodedValue.slice(1, endIndex));
+  // Check if the bencodedValue is a list
+  else if (isList(bencodedValue)) {
+    const decodedList: BEncodeValue[] = [];
+    let offset = 1;
+    while (offset < bencodedValue.length) {
+      if (bencodedValue[offset] === "e") {
+        break;
+      }
+      const [decodedValue, encodedLength] = decodeBencode(bencodedValue.substring(offset));
+      decodedList.push(decodedValue);
+      offset += encodedLength;
     }
+    return [decodedList, offset + 1];
+  }
 
-    throw new Error("Only strings, integers, and lists are supported at the moment");
+  // If none of the above types matched, throw an error
+  else {
+    throw new Error("Unsupported type");
+  }
 }
 
-// Example Usage with CLI arguments
 const args = process.argv;
 const bencodedValue = args[3];
 
 if (args[2] === "decode") {
-    try {
-        const decoded = decodeBencode(bencodedValue);
-
-        // Handle different types of return values
-        if (Array.isArray(decoded)) {
-            console.log(JSON.stringify(decoded)); // If it's an array (list)
-        } else {
-            console.log(decoded); // If it's a string or number
-        }
-
-    } catch (error: any) {
-        console.error(error.message);
-    }
+  try {
+    const [decoded] = decodeBencode(bencodedValue);
+    console.log(JSON.stringify(decoded));
+  } catch (error: any) {
+    console.error(error.message);
+  }
 }
