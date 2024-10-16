@@ -101,5 +101,17 @@ if (args[2] === "decode") {
   const torrentFile = args[3];
   const contents = fs.readFileSync(torrentFile , 'utf-8');
   const [decoded , decodedLength] = decodeBencode(contents);
-  console.log(decoded);
+  const torrent = decoded as {
+    announce  : string
+    info : {
+      length : number
+      name: string
+      "piece length": number
+      pieces: string
+    }
+  }
+  if (!torrent.announce || !torrent.info) {
+    throw new Error("Invalid torrent file")
+  }
+  console.log(`Tracker URL: ${torrent.announce}\nLength: ${torrent.info.length}`);
 }
