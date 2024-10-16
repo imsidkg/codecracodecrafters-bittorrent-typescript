@@ -1,4 +1,4 @@
-type BEncodeValue = string | number | Array<BEncodeValue>;
+type BEncodeValue = string | number | Array<BEncodeValue> | { [key: string]: BEncodeValue };
 
 function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
   const isString = (val: string): boolean => {
@@ -11,6 +11,10 @@ function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
 
   const isList = (val: string): boolean => {
     return val[0] === "l";
+  };
+
+  const isDict = (val: string): boolean => {
+    return val[0] === "d";
   };
 
   // Check if the bencodedValue is a string
@@ -50,12 +54,36 @@ function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
     return [decodedList, offset + 1];
   }
 
+  // Check if the bencodedValue is a dictionary
+  else if (isDict(bencodedValue)) {
+    const decodedDict: { [key: string]: BEncodeValue } = {};
+    let offset = 1;
+    while (offset < bencodedValue.length) {
+      if (bencodedValue[offset] === "e") {
+        break;
+      }
+      // Decode the key (must be a string)
+      const [key, keyLength] = decodeBencode(bencodedValue.substring(offset));
+      if (typeof key !== "string") {
+        throw new Error("Dictionary keys must be strings");
+      }
+      offset += keyLength;
+
+      // Decode the value
+      const [value, valueLength] = decodeBencode(bencodedValue.substring(offset));
+      decodedDict[key] = value;
+      offset += valueLength;
+    }
+    return [decodedDict, offset + 1];
+  }
+
   // If none of the above types matched, throw an error
   else {
     throw new Error("Unsupported type");
   }
 }
 
+// Main logic to execute the decode command
 const args = process.argv;
 const bencodedValue = args[3];
 
