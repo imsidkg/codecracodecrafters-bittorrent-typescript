@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 type BEncodeValue = string | number | Array<BEncodeValue> | { [key: string]: BEncodeValue };
 
 function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
@@ -85,13 +87,19 @@ function decodeBencode(bencodedValue: string): [BEncodeValue, number] {
 
 // Main logic to execute the decode command
 const args = process.argv;
-const bencodedValue = args[3];
+
 
 if (args[2] === "decode") {
+  const bencodedValue = args[3];
   try {
     const [decoded] = decodeBencode(bencodedValue);
     console.log(JSON.stringify(decoded));
   } catch (error: any) {
     console.error(error.message);
   }
+}else if (args[2] == 'info') {
+  const torrentFile = args[3];
+  const contents = fs.readFileSync(torrentFile , 'utf-8');
+  const [decoded , decodedLength] = decodeBencode(contents);
+  console.log(decoded);
 }
